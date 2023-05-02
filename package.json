@@ -1,0 +1,14 @@
+{
+  "packageManager": "yarn@3.5.1",
+  "main": "./app/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "ts-node ./src/index.ts",
+    "bot": "node ./app/index.js"
+  },
+  "type": "module",
+  "dependencies": {
+    "discord.js": "^14.10.2",
+    "dotenv": "^16.0.3"
+  }
+}
