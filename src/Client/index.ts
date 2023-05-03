@@ -4,6 +4,12 @@ dotenv.config()
 import { Command, Event, RegisterCommandOptions } from '../Interfaces/index.js'
 import { readdirSync } from 'fs'
 
+type commandsLoaded = {
+    file: string;
+    path: string;
+    relativePath: string;
+}
+
 class Bot extends Client {
     public commands: Collection<string, Command> = new Collection();
     public events: Collection<string, Event> = new Collection();
@@ -23,11 +29,13 @@ class Bot extends Client {
     async registerCommands({ commands, guildId }: RegisterCommandOptions) {
         if (guildId) {
             this.guilds.cache.get(guildId)?.commands.set(commands);
-            console.log(`[!]Registered commands at: ${guildId}`);
+            console.log(`\n[!]${commands.length} Commands registered at: ${guildId}\n`);
         } else {
             this.application?.commands.set(commands);
-            console.log(`[!]Commands set for all guilds!`);
+            console.log(`\n[!]${commands.length} Commands set for all guilds!\n`);
         }
+        console.log(`[!]Listening to events: ${this.events.map(({ name }) => name)}`)
+        console.log(`[!]Enabled intents: ${this.options.intents.toArray()}`)
     }
 
     async registerModules() {
@@ -35,37 +43,79 @@ class Bot extends Client {
 
         const commandPath = './src/Commands'
 
-        const commands = readdirSync(`${commandPath}`).filter(file => file.endsWith('.ts'))
+        function readCommandsFromDir(dir: string): commandsLoaded[] {
 
-        commands.forEach(async (file) => {
-            const command: Command = await this.importFile(`../Commands/${file}`)
-            if (!command.name) return;
+            const dirItems = readdirSync(`${dir}`)
 
-            this.commands.set(command.name, command)
-            slashCommands.push(command)
-        })
+            const commands: commandsLoaded[] = []
 
-        this.on('ready', () => {
-            this.registerCommands({
-                commands: slashCommands,
-                guildId: process.env.TEST_SERVER
-            })
+            for (const file of dirItems) {
+                if (file.endsWith('.ts')) {
+                    commands.push({
+                        file: file,
+                        path: dir,
+                        relativePath: dir.split('./src/Commands')[1] == '' ? '/' : dir.split('./src/Commands')[1]
+                    })
+                }
+            }
+
+            const folders = dirItems.filter(file => !file.endsWith('.ts'))
+
+            if (folders.length > 0) {
+                const foundCommands: commandsLoaded[] = []
+
+                for (const folder of folders) {
+                    const fcommands = readCommandsFromDir(`${commandPath}/${folder}`)
+
+                    for (const fcommand of fcommands) {
+                        foundCommands.push(fcommand)
+                    }
+                }
+                return commands.concat(foundCommands)
+            }
+            return commands
+
+        }
+
+        const commands = readCommandsFromDir(commandPath)
+
+        for (const { file, path, relativePath } of commands) {
+            try {
+                console.log(`[!]Importing command: ../Commands${relativePath}${relativePath === '/' ? '' : '/'}${file}`)
+                const command: Command = await this.importFile(`../Commands${relativePath}${relativePath === '/' ? '' : '/'}${file}`)
+                if (!command.name) return;
+                console.log(`[!]Successfully imported > ${command.name} <`)
+
+                this.commands.set(command.name, command)
+                slashCommands.push(command)
+
+            } catch (err) {
+                console.log(`[!]Error while importing last command! + ${err}`)
+            }
+        }
+
+        this.registerCommands({
+            commands: slashCommands,
+            guildId: process.env.TEST_SERVER
         })
     }
 
     public async init() {
-        this.login(this.config.DISCORD_BOT_TOKEN)
-        this.registerModules()
-
-        if (!this.config.TEST_SERVER) console.log('[!]TEST SERVER IS NOT SET')
-
         const eventPath = './src/Events'
 
-        readdirSync(eventPath).forEach(async (file) => {
+        const events = readdirSync(eventPath)
+
+        for (const file of events) {
             const { event } = await import(`../Events/${file}`)
             this.events.set(event.name, event)
             this.on(event.name, event.run.bind(null, this))
-        })
+        }
+
+        await this.login(this.config.DISCORD_BOT_TOKEN)
+
+        if (!this.config.TEST_SERVER) console.log('[!]TEST SERVER NOT SET')
+
+        await this.registerModules()
     }
 }
 
