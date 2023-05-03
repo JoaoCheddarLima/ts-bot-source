@@ -118,7 +118,7 @@ export const slash: Command = {
         if (command == 'status-interval') {
             const config = await readConfig()
 
-            config.playing.cooldown = statusInterval
+            config.status.cooldown = statusInterval
 
             await writeConfig(config)
 
@@ -128,7 +128,7 @@ export const slash: Command = {
         if (command == 'status-add') {
             const config = await readConfig()
 
-            config.playing.texts.push(statusMessage)
+            config.status.texts.push(statusMessage)
 
             await writeConfig(config)
 
@@ -138,11 +138,11 @@ export const slash: Command = {
         if (command == 'status-remove') {
             const config = await readConfig()
 
-            const texts = config.playing.texts
+            const texts = config.status.texts
 
             if (!texts.includes(statusMessage)) return interaction.editReply({ content: `\`\`\`${statusMessage}\`\`\`Isn't on the current status messages.` })
 
-            config.playing.texts.splice(texts.indexOf(statusMessage), 1)
+            config.status.texts.splice(texts.indexOf(statusMessage), 1)
 
             await writeConfig(config)
 

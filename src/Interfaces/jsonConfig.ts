@@ -1,5 +1,5 @@
 export interface jsonConfig {
-    playing: {
+    status: {
         texts: string[],
         cooldown: number
     }
