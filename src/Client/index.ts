@@ -38,7 +38,6 @@ class Bot extends Client {
         const commands = readdirSync(`${commandPath}`).filter(file => file.endsWith('.ts'))
 
         commands.forEach(async (file) => {
-            console.log((`${commandPath}/${file}`))
             const command: Command = await this.importFile(`../Commands/${file}`)
             if (!command.name) return;
 

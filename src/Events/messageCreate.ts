@@ -1,5 +1,4 @@
-import { Message, Embed, Permissions, ChannelType } from 'discord.js'
-import dotenv from 'dotenv'
+import { Message, ChannelType } from 'discord.js'
 import { Event } from '../Interfaces/events.js'
 
 export const event: Event = {
@@ -7,8 +6,6 @@ export const event: Event = {
     run: async (client, message: Message) => {
         if (message.channel.type === ChannelType.DM) return;
         if (message.author.bot) return;
-
-        console.log(message)
 
         if (message.content === '!ping') message.reply({ content: `pong!, ${client.ws.ping}` })
     }
